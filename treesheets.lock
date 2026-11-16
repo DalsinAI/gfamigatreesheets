@@ -1,0 +1,13 @@
+# What this port builds on: fetched at build time, never shipped.
+# TreeSheets (zlib licence), release 3048: the last one on wxWidgets 3.2
+# (upstream moved to wxWidgets 3.3 in 45b8259, 6 Apr 2026)
+TS_GIT=https://github.com/aardappel/treesheets.git
+TS_COMMIT=564c5f4db70f5e2f589aa1ae0ec87266df729f95
+TS_VERSION=3048
+# Our own pieces, fetched at these commits
+# GFOpenWX Toolkit main b2ec7bd (wx 3.2.12: aui, adv, xml, net, IPC, fswatcher)
+WXT_REPO=https://github.com/DalsinAI/gfopenwxtoolkit
+WXT_COMMIT=b2ec7bdbdec33229e10a741737ad005325e12f7d
+# fpuauto (common/fpuauto): the FPU when there is one
+FPA_REPO=https://github.com/DalsinAI/amicradle-guest
+FPA_COMMIT=4a784c84b878fe0e9abade7006e67e1ded9b165c

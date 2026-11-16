@@ -1,0 +1,84 @@
+diff --git a/src/stdafx.h b/src/stdafx.h
+index d3bf86cb..e16117eb 100644
+--- a/src/stdafx.h
++++ b/src/stdafx.h
+@@ -63,9 +63,13 @@
+ #include <array>
+ #include <clocale>
+ #include <condition_variable>
+-#include <filesystem>
++#ifndef __amigaos__
++    #include <filesystem>
++#endif
+ #include <functional>
+-#include <future>
++#ifndef __amigaos__
++    #include <future>
++#endif
+ #include <locale>
+ #include <map>
+ #include <memory>
+@@ -77,10 +81,17 @@
+ #include <stdexcept>
+ #include <string>
+ #include <string_view>
+-#include <thread>
++#ifndef __amigaos__
++    #include <thread>
++#endif
+ #include <utility>
+ #include <vector>
+ 
++#ifdef __amigaos__
++    #define TS_HW_THREADS 1
++#else
++    #define TS_HW_THREADS std::thread::hardware_concurrency()
++#endif
+ #include "threadpool.h"
+ #include "tools.h"
+ 
+diff --git a/src/system.h b/src/system.h
+index beaecfff..8554d65c 100644
+--- a/src/system.h
++++ b/src/system.h
+@@ -320,7 +320,7 @@ struct System {
+ 
+         doc->RefreshImageRefCount(false);
+         {
+-            ThreadPool pool(std::thread::hardware_concurrency());
++            ThreadPool pool(TS_HW_THREADS);
+             for (const auto &image : sys->imagelist) {
+                 pool.enqueue(
+                     [](auto img) {
+diff --git a/src/threadpool.h b/src/threadpool.h
+index e1d9724c..a50d727a 100644
+--- a/src/threadpool.h
++++ b/src/threadpool.h
+@@ -1,3 +1,9 @@
++#ifdef __amigaos__
++    // One CPU, and no std::thread in the Amiga C++ library: the same
++    // interface, every task run at once, in order (compat/ts_amiga_pool.h).
++    #include "ts_amiga_pool.h"
++    using ThreadPool = TSAmigaPool;
++#else
+ class ThreadPool {
+     public:
+     ThreadPool(size_t);
+@@ -70,3 +76,4 @@ inline ThreadPool::~ThreadPool() {
+     condition.notify_all();
+     for (std::thread& worker : workers) worker.join();
+ }
++#endif  // __amigaos__
+diff --git a/src/tsframe.h b/src/tsframe.h
+index 3ac64486..3d929414 100644
+--- a/src/tsframe.h
++++ b/src/tsframe.h
+@@ -1464,7 +1464,7 @@ struct TSFrame : wxFrame {
+         wxEventBlocker blocker(this);
+         wxBusyCursor wait;
+         {
+-            ThreadPool pool(std::thread::hardware_concurrency());
++            ThreadPool pool(TS_HW_THREADS);
+             for (const auto &image : sys->imagelist) {
+                 pool.enqueue(
+                     [](auto img) {
