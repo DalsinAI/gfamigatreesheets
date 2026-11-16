@@ -1,0 +1,91 @@
+diff --git a/src/tsapp.h b/src/tsapp.h
+index 74395f44..c042e0bf 100644
+--- a/src/tsapp.h
++++ b/src/tsapp.h
+@@ -20,7 +20,9 @@ struct TSApp : wxApp {
+     bool initiateventloop {false};
+     wxString exename;
+     wxString exepath;
++    #if wxUSE_SNGLINST_CHECKER
+     unique_ptr<wxSingleInstanceChecker> instance_checker {nullptr};
++    #endif
+ 
+     bool OnInit() override {
+         #if wxUSE_UNICODE == 0
+@@ -64,6 +66,8 @@ struct TSApp : wxApp {
+             }
+         }
+ 
++        // GFOpenWX has no wxSingleInstanceChecker (no lock files): each start is its own
++        #if wxUSE_SNGLINST_CHECKER
+         if (single_instance) {
+             instance_checker.reset(new wxSingleInstanceChecker(
+                 wxTheApp->GetAppName() + '-' + wxGetUserId(), wxStandardPaths::Get().GetTempDir()));
+@@ -75,6 +79,9 @@ struct TSApp : wxApp {
+                 return false;
+             }
+         }
++        #else
++        (void)single_instance;
++        #endif
+ 
+         wxStandardPaths::Get().SetFileLayout(wxStandardPathsBase::FileLayout_XDG);
+         sys = new System(portable);
+diff --git a/src/tsframe.h b/src/tsframe.h
+index 3d929414..2cca4f0c 100644
+--- a/src/tsframe.h
++++ b/src/tsframe.h
+@@ -1,7 +1,9 @@
+ struct TSFrame : wxFrame {
+     TSApp *app;
+     wxIcon icon;
++    #if wxUSE_TASKBARICON
+     wxTaskBarIcon taskbaricon;
++    #endif
+     wxMenu *editmenupopup;
+     wxFileHistory filehistory;
+     #ifdef ENABLE_LOBSTER
+@@ -85,12 +87,14 @@ struct TSFrame : wxFrame {
+ 
+         imagepath = app->GetDataPath("images/nuvola/dropdown/");
+ 
++        #if wxUSE_TASKBARICON
+         if (sys->singletray)
+             taskbaricon.Connect(wxID_ANY, wxEVT_TASKBAR_LEFT_UP,
+                         wxTaskBarIconEventHandler(TSFrame::OnTBIDBLClick), nullptr, this);
+         else
+             taskbaricon.Connect(wxID_ANY, wxEVT_TASKBAR_LEFT_DCLICK,
+                         wxTaskBarIconEventHandler(TSFrame::OnTBIDBLClick), nullptr, this);
++        #endif
+ 
+         bool showtbar, showsbar, lefttabs;
+ 
+@@ -1334,7 +1338,7 @@ struct TSFrame : wxFrame {
+ 
+     void OnIconize(wxIconizeEvent &me) {
+         if (me.IsIconized()) {
+-            #ifndef __WXMAC__
++            #if !defined(__WXMAC__) && wxUSE_TASKBARICON
+             if (sys->totray) {
+                 taskbaricon.SetIcon(icon, L"TreeSheets");
+                 Show(false);
+@@ -1351,7 +1355,9 @@ struct TSFrame : wxFrame {
+         }
+     }
+ 
++    #if wxUSE_TASKBARICON
+     void OnTBIDBLClick(wxTaskBarIconEvent &e) { DeIconize(); }
++    #endif
+ 
+     void OnClosing(wxCloseEvent &ce) {
+         bool fcb = fromclosebox;
+@@ -1503,7 +1509,9 @@ struct TSFrame : wxFrame {
+         }
+         Show(true);
+         Iconize(false);
++        #if wxUSE_TASKBARICON
+         taskbaricon.RemoveIcon();
++        #endif
+     }
+ 
+     TSCanvas *GetCurrentTab() {
