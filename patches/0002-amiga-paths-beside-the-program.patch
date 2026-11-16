@@ -1,0 +1,61 @@
+diff --git a/src/stdafx.h b/src/stdafx.h
+index d3bf86cb..68e4207f 100644
+--- a/src/stdafx.h
++++ b/src/stdafx.h
+@@ -83,6 +83,9 @@
+ 
+ #include "threadpool.h"
+ #include "tools.h"
++#ifdef __amigaos__
++    #include "ts_amiga_path.h"
++#endif
+ 
+ #ifdef __WXMAC__
+     #include <mach-o/dyld.h>
+diff --git a/src/tsapp.h b/src/tsapp.h
+index ca017243..74395f44 100644
+--- a/src/tsapp.h
++++ b/src/tsapp.h
+@@ -10,7 +10,7 @@ struct TSApp : wxApp {
+     TSFrame *frame {nullptr};
+     unique_ptr<IPCServer> serv {make_unique<IPCServer>()};
+     wxString service {
+-        #ifdef __WXMSW__
++        #if defined(__WXMSW__) || defined(__amigaos__)
+                 L"4242"
+         #else
+                 L"/tmp/TreeSheets-socket"
+@@ -30,6 +30,10 @@ struct TSApp : wxApp {
+ 
+         exename = GetExecutablePath();
+         exepath = wxFileName(exename).GetPath();
++        #ifdef __amigaos__
++            // images/, docs/ and the rest sit beside the program
++            exepath = L"PROGDIR:";
++        #endif
+ 
+         #if defined(__WXMAC__)
+             int cut = exepath.Find("/MacOS");
+@@ -165,6 +169,14 @@ struct TSApp : wxApp {
+         wxTranslations::Set(trans);
+     }
+ 
++    #ifdef __amigaos__
++        // Amiga paths: "PROGDIR:" + "images/x.png", never "PROGDIR:/images"
++        // (a leading slash is the parent drawer); compat/ts_amiga_path.h
++        wxString GetDataPath(const wxString &relpath) {
++            return wxString::FromUTF8(ts_amiga_join(exepath.ToStdString(), relpath.ToStdString()));
++        }
++        wxString GetDocPath(const wxString &relpath) { return GetDataPath(relpath); }
++    #else
+     wxString GetDataPath(const wxString &relpath) {
+         std::filesystem::path candidatePaths[] = {
+             std::filesystem::path(exepath.Length()
+@@ -200,6 +212,7 @@ struct TSApp : wxApp {
+ 
+         return wxString(relativePath.c_str());
+     }
++    #endif  // __amigaos__
+ 
+     #ifdef __WXMSW__
+         void DeclareHiDpiAwareOnWindows() {
