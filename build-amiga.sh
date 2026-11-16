@@ -131,7 +131,9 @@ P="$OUT/Parts/TreeSheets"; rm -rf "$P"; mkdir -p "$P/Utilities/TreeSheets"
 m68k-amigaos-strip -o "$P/Utilities/TreeSheets/TreeSheets" "$O/TreeSheets.debug"
 for d in images docs examples translations; do cp -R "$SRC/TS/$d" "$P/Utilities/TreeSheets/"; done
 cp "$SRC/TS/readme.html" "$SRC/ZLIB_LICENSE.txt" "$P/Utilities/TreeSheets/"
-rm -f "$P/Utilities/TreeSheets/translations/ts.pot" "$P/Utilities/TreeSheets/translations/readme_translations.txt"
+# only the compiled catalogues (ts.mo) of translations/, and no Windows or shell helpers
+find "$P/Utilities/TreeSheets/translations" -type f ! -name ts.mo -exec rm -f {} +
+rm -f "$P/Utilities/TreeSheets/docs/script_reference_update.bat"
 sh "$HERE/scripts/write-part.sh" "$P" "$TS_VERSION"
 ls -l "$P/Utilities/TreeSheets/TreeSheets"
 echo "part: $(grep -c '^copy' "$P/Part") files, $(du -sk "$P" | cut -f1) KB"
